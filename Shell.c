@@ -3,27 +3,55 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <fcntl.h>
 #include <sys/wait.h>
+#include <unistd.h>
 #define MAX_ARGS 15
 #define MAX_LINE 200
 
-// handling EOF
+
+
 void remove_end_line(char line[]){
     int i =0;
-    while(line[i] != '\n')
+    while(line[i] != '\n'&&line[i]!='>')
     {
         i++;
     }
-    printf("%d", i);
     line[i] = '\0';
 }
 
-// reading shell command line
-void read_line(char line[]){
-    fgets(line,MAX_LINE,stdin);
-    remove_end_line(line);
-    printf("\n I have read the following line: \n%s\n", line);
+int detect_redirection(char line[], char file_name[]){
+    int i = 0;
+    int ret;
+    while (line[i]!=NULL&&line[i]!='>'&&line[i]!='<'){
+        i++;
+    }
+    if (line [i]==NULL)
+        return -1;
+    if (line[i]=='>')
+        ret=1;
+    else
+        ret=0;
+    i++;
+    int j=0;
+    if (line [i]==' ')
+        i++;
+    while (line[i]!=NULL){
+        file_name[j]=line[i];
+        i++; j++;
+    }
 
+    file_name[j-1]=NULL;
+
+    return ret;
+}
+// reading shell command line
+int read_line(char line[],char file_name[]){
+
+    fgets(line,MAX_LINE,stdin);
+    int ret=detect_redirection(line,file_name);
+    remove_end_line(line);
+    return ret;
 }
 
 // parsing line
@@ -48,21 +76,30 @@ int split_line(char line[],char* args[]){
 
 int main()
 {
-    // variables declaration
-    char* args[MAX_ARGS];
-    char line[MAX_LINE];
+
+    char line[20], file_name[25];
+    char * args[20];
     while(1){
-	    read_line(line);    // calling reading command line function
-	    split_line(line,args);  // parsing the line
+
+        int ret= read_line(line,file_name);
+        split_line(line,args);  // parsing the line
+
+        // execute the parsing line
+        pid_t child_pid = fork();
+        if(child_pid == 0){
+            if (ret!=-1){
+                int file = open(file_name, O_RDWR|O_CREAT,0777);
+                dup2(file,ret);
+            }
+
+            execvp(args[0],args);
+        }
+        else{
+            waitpid(child_pid,NULL,0);
+        }
+
     }
-    // execute the parsing line
-    pid_t child_pid = fork();
-    if(child_pid == 0){
-        execvp(args[0],args);
-    }
-    else{
-        waitpid(child_pid,NULL,0);
-    }
+
 
     return 0;
 }
