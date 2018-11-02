@@ -80,7 +80,7 @@ int main()
     char line[20], file_name[25];
     char * args[20];
     while(1){
-        printf(">");
+        printf("sish:> ");
         int ret= read_line(line,file_name);
         split_line(line,args);  // parsing the line
 
