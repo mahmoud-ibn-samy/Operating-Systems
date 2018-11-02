@@ -80,7 +80,7 @@ int main()
     char line[20], file_name[25];
     char * args[20];
     while(1){
-
+        printf(">");
         int ret= read_line(line,file_name);
         split_line(line,args);  // parsing the line
 
@@ -92,7 +92,10 @@ int main()
                 dup2(file,ret);
             }
 
-            execvp(args[0],args);
+            int a = execvp(args[0],args);
+            if(a == -1){
+                 printf("Please Enter A Valid Shell Command\n");
+            }
         }
         else{
             waitpid(child_pid,NULL,0);
