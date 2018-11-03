@@ -8,7 +8,8 @@
 #include <unistd.h>
 #define MAX_ARGS 15
 #define MAX_LINE 200
-
+int background;
+int bgp=0,done=0;
 
 
 void remove_end_line(char line[]){
@@ -53,10 +54,18 @@ int detect_redirection(char line[], char file_name[]){
 }
 // reading shell command line
 int read_line(char line[], char file_name[]){
-
-    fgets(line,MAX_LINE,stdin);
+    int i=0;
+    char* command=fgets(line,MAX_LINE,stdin);
     int ret = detect_redirection(line,file_name);
+    while(line[i]!='\n')
+    i++;
+    if(line[i-1]=='&'){
+	line[i-1]='\n';
+        background=1;
+    }
     remove_end_line(line);
+    if (strcmp(line,"exit")==0 || command==NULL)
+    exit(0);
     return ret;
 }
 
@@ -67,7 +76,9 @@ int split_line(char line[],char* args[]){
 
     if(args[i] == NULL)
     {
-        printf("NO COMMANS !\n");
+        if (done!=bgp)
+		return 1;
+        printf("NO COMMANDS !\n");
         return 1;
     }
     while(args[i] != NULL)
@@ -92,7 +103,29 @@ int main()
 
         // execute the parsing line
         pid_t child_pid = fork();
-        if(child_pid == 0){
+        if(child_pid >0){
+            if(background==1){
+                bgp++;
+                printf("[%d]%d\n",bgp,child_pid);
+                if(waitpid(-1,NULL,WNOHANG) &&bgp>1){
+                    done++;
+                    printf("[%d] Done\n",done);
+            }
+            background=0;
+            continue;
+        }
+        else if(waitpid(-1,NULL,WNOHANG) &&done<bgp){
+            done++;
+            printf("[%d]+Done\n",done);
+            if(done==bgp){
+                done=0;
+                bgp=0;
+            }
+        }
+        else
+            waitpid(child_pid,NULL,0);
+         }
+        else if(child_pid == 0){
             char* file_status;
             if (ret != -1){
                 int file;
@@ -110,9 +143,7 @@ int main()
                  printf("Please Enter A Valid Shell Command\n");
             }
         }
-        else{
-            waitpid(child_pid,NULL,0);
-        }
+
 
     }
 
