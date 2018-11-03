@@ -13,43 +13,49 @@
 
 void remove_end_line(char line[]){
     int i =0;
-    while(line[i] != '\n'&&line[i]!='>')
-    {
+    while(line[i] != '\n' && line[i] != '>')
         i++;
-    }
+
     line[i] = '\0';
 }
 
 int detect_redirection(char line[], char file_name[]){
     int i = 0;
     int ret;
-    while (line[i]!=NULL&&line[i]!='>'&&line[i]!='<'){
+    while (line[i] != NULL && line[i] != '>' && line[i] != '<')
         i++;
-    }
-    if (line [i]==NULL)
+
+    if (line [i] == NULL)
         return -1;
-    if (line[i]=='>')
-        ret=1;
+    if (line[i] == '>'){
+        if(line[i+1] == '>'){
+            i++;
+            ret = 2;
+        }
+        else
+            ret = 1;
+    }
     else
-        ret=0;
+        ret = 0;
     i++;
-    int j=0;
-    if (line [i]==' ')
+    int j = 0;
+    while (line [i] == ' ')
         i++;
-    while (line[i]!=NULL){
-        file_name[j]=line[i];
-        i++; j++;
+    while (line[i] != NULL){
+        file_name[j] = line[i];
+        i++;
+        j++;
     }
 
-    file_name[j-1]=NULL;
+    file_name[j-1] = NULL;
 
     return ret;
 }
 // reading shell command line
-int read_line(char line[],char file_name[]){
+int read_line(char line[], char file_name[]){
 
     fgets(line,MAX_LINE,stdin);
-    int ret=detect_redirection(line,file_name);
+    int ret = detect_redirection(line,file_name);
     remove_end_line(line);
     return ret;
 }
@@ -87,11 +93,18 @@ int main()
         // execute the parsing line
         pid_t child_pid = fork();
         if(child_pid == 0){
-            if (ret!=-1){
-                int file = open(file_name, O_RDWR|O_CREAT,0777);
-                dup2(file,ret);
-            }
+            char* file_status;
+            if (ret != -1){
+                int file;
+                if(ret == 2){
+                    file = open(file_name, O_RDWR | O_APPEND | O_CREAT,0777);
+                    ret = 1;
+                }
+                else
+                    file = open(file_name, O_RDWR | O_TRUNC | O_CREAT,0777);
 
+                dup2(file, ret);
+            }
             int a = execvp(args[0],args);
             if(a == -1){
                  printf("Please Enter A Valid Shell Command\n");
