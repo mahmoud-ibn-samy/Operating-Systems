@@ -91,14 +91,57 @@ int split_line(char line[],char* args[]){
 }
 
 
+//Converting non-alphanumeric characters to spaces
+int checkForAlphanumericChars(char line[], char alphanumericChars[]) {
+
+    int i = 0; //outer loop counter
+    int isALPHANUMERIC = 0;
+
+    while (line[i] != '\0') {
+
+        int j = 0;  //inner loop counter
+
+        while (alphanumericChars[j] != '\0') {
+
+            if (line[i] == alphanumericChars[j]) {
+                isALPHANUMERIC = 1;
+                break;
+            }
+
+            j++;
+
+        }
+
+        // if it's not alphanumeric, put a space in its place
+        if (isALPHANUMERIC == 0){
+           
+            line[i] = ' ';
+        } else {
+            isALPHANUMERIC = 0;
+        }
+
+        i++;
+
+    }
+    return 1;
+
+
+}
+
+
 int main()
 {
 
     char line[20], file_name[25];
     char * args[20];
+
+// variable that is used to check for non-alphanumaric
+    char alphanumericChars[] = "1234567890QWERTYUIOPLKJHGFDSAZXCVBNMqwertyuioplkjhgfdsazxcvbnm -'_<>|&";
+	
     while(1){
         printf("sish:> ");
         int ret= read_line(line,file_name);
+	checkForAlphanumericChars(line, alphanumericChars); //Converting non-alphanumeric characters to spaces
         split_line(line,args);  // parsing the line
 
         // execute the parsing line
